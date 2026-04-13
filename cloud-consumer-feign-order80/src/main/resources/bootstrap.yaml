@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: cloud-openfeign-order-service
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        service-name: ${spring.application.name}
+        prefer-ip-address: true  #优先使用服务ip进行注册
+      config:
+        enabled: true
+        format: YAML  # 关键：告诉 Spring 解析 YAML 格式
+        default-context: payment-service
+        data-key: data  # 关键：指定读取 data 这个 Key 的 Value 作为配置源
+        profile-separator: '-'  # 适配 dev/prod 环境
+        profiles:
+          active: dev  # 可选，指定读取 dev 环境
+    openfeign:
+      client:
+        config:
+          default:
+            connectTimeout: 4000
+            readTimeout: 4000
+          #cloud-payment-service:
+            #connectTimeout: 5000
+            #readTimeout: 5000
+      httpclient:
+        hc5:
+          enabled: true
+      compression:
+        request:
+          enabled: true
+          min-request-size: 2048
+          mime-types: text/xml, application/xml, application/json
+        response:
+          enabled: true
+logging:
+  file:
+    name: logs/application.log
+  level:
+    com:
+      qzh:
+        api:
+          PayFeignApi: debug

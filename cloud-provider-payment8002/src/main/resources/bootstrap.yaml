@@ -1,0 +1,17 @@
+spring:
+  application:
+    name: cloud-payment-service
+  cloud:
+    consul:
+      host: localhost
+      port: 8500
+      discovery:
+        service-name: ${spring.application.name}
+      config:
+        enabled: true
+        format: YAML  # 关键：告诉 Spring 解析 YAML 格式
+        default-context: payment-service
+        data-key: data  # 关键：指定读取 data 这个 Key 的 Value 作为配置源
+        profile-separator: '-'  # 适配 dev/prod 环境
+        profiles:
+          active: dev  # 可选，指定读取 dev 环境
