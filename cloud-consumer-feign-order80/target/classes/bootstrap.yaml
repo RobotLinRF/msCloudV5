@@ -22,9 +22,13 @@ spring:
           default:
             connectTimeout: 4000
             readTimeout: 4000
-          #cloud-payment-service:
+            #cloud-payment-service:
             #connectTimeout: 5000
             #readTimeout: 5000
+      circuitbreaker:
+        enabled: true
+        group:
+          enabled: true
       httpclient:
         hc5:
           enabled: true
@@ -37,9 +41,55 @@ spring:
           enabled: true
 logging:
   file:
-    name: logs/application1.log
+    name: logs/application.log
   level:
     com:
       qzh:
         api:
           PayFeignApi: debug
+resilience4j:
+  timelimiter:
+    configs:
+      default:
+        timeout-duration: 10s
+
+  thread-pool-bulkhead:
+    configs:
+      default:
+        core-thread-pool-size: 1
+        max-thread-pool-size: 1
+        queue-capacity: 1
+
+  bulkhead:
+    configs:
+      default:
+        maxConcurrentCalls: 2 # 隔离允许并发线程执行的最大数量
+        maxWaitDuration: 1s # 当达到并发调用数量时，新的线程的阻塞时间，我只愿意等待1秒，过时不候进舱壁兜底fallback
+
+  ratelimiter:
+    configs:
+      default:
+        limitForPeriod: 2 #在一次刷新周期内，允许执行的最大请求数
+        limitRefreshPeriod: 1s # 限流器每隔limitRefreshPeriod刷新一次，将允许处理的最大请求数量重置为limitForPeriod
+        timeout-duration: 1 # 线程等待权限的默认等待时间
+
+  circuitbreaker:
+    configs:
+      default:
+        #失败率，错误率达到或高于该值则进入open状态
+        failureRateThreshold: 50  #达到50%调用失败打开断路器，超过失败的请求百分比
+        slidingWindowType: COUNT_BASED #滑动窗口类型
+        slidingWindowSize: 6 #滑动窗口的大小配置，6就表示6个请求
+        minimumNumberOfCalls: 6 #断路器计算失败率或者慢调用率所需的最小样本，如果是10，必须记录最稍微10个样本，如果只记录了9个，即使都失败也不会开启
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s #从打开到半开需要等待的时间
+        permittedNumberOfCallsInHalfOpenState: 2    #open状态变为half状态需要等待的时间，默认为10，即熔断多久后开始尝试访问被熔断的服务。
+        recordExceptions:
+          - java.lang.Exception
+    instances:
+      cloud-payment-service:
+        base-config: default
+    metrics:
+      enabled:
+
+
